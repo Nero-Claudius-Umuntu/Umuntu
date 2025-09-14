@@ -1,0 +1,9 @@
+sudo apt update
+sudo apt install libpng-dev libxcursor-dev build-essentiala
+
+git clone https://github.com/eworm-de/xcur2png.git
+cd xcur2png
+
+./configure
+make
+sudo make install
