@@ -1,13 +1,13 @@
-PRETTY_NAME="Umuntu Live CD"
+PRETTY_NAME="Umuntu 24.04"
 NAME="Umuntu"
 VERSION_ID="24.04"
 VERSION="24.04.3 LTS (Nero Edition)"
 VERSION_CODENAME=noble
 ID=ubuntu
 ID_LIKE=debian
-HOME_URL="https://www.ubuntu.com/"
-SUPPORT_URL="https://help.ubuntu.com/"
-BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+HOME_URL="https://github.com/Nero-Claudius-Umuntu/Umuntu/tree/main"
+SUPPORT_URL="https://github.com/Nero-Claudius-Umuntu/Umuntu/tree/main"
+BUG_REPORT_URL="https://github.com/Nero-Claudius-Umuntu/Umuntu/issues"
 PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
 UBUNTU_CODENAME=noble
 LOGO=umuntu-logo

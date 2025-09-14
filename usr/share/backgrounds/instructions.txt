@@ -1,0 +1,2 @@
+Se recomienda aqui borrar el resto de los wallpapers originales de ubuntu 
+pues en gnome-background-properties reemplazamos por versiones solo linqueados a los de Nero
