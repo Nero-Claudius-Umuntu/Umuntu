@@ -1,0 +1,11 @@
+[Sound Theme]
+Name=Yaru
+Directories=stereo
+
+[stereo]
+OutputProfile=stereo
+
+
+[Alert]
+Name=Umu
+File=umu.ogg

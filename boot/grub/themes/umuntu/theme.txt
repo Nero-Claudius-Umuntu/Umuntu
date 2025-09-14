@@ -1,0 +1,3 @@
+desktop-image: "Nero-grub-bg.png"
+title-text: "Umuntu"
+
