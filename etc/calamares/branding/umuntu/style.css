@@ -1,0 +1,64 @@
+/* Umuntu Calamares Style */
+
+QWidget {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
+
+QMainWindow {
+    background-color: #2d2d2d;
+}
+
+QPushButton {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 4px;
+    padding: 8px 16px;
+    color: #ffffff;
+}
+
+QPushButton:hover {
+    background-color: #505050;
+}
+
+QPushButton:pressed {
+    background-color: #353535;
+}
+
+QLineEdit {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 4px;
+    padding: 6px;
+    color: #ffffff;
+}
+
+QComboBox {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 4px;
+    padding: 6px;
+    color: #ffffff;
+}
+
+QTextEdit {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 4px;
+    color: #ffffff;
+}
+
+QLabel {
+    color: #ffffff;
+}
+
+QProgressBar {
+    border: 1px solid #606060;
+    border-radius: 4px;
+    background-color: #404040;
+}
+
+QProgressBar::chunk {
+    background-color: #ff6b6b;
+    border-radius: 3px;
+}
