@@ -1,12 +1,23 @@
 /* Umuntu Calamares Style */
 
 QWidget {
-    background-color: #2d2d2d;
+    background-color: #1a1a1a;
     color: #ffffff;
 }
 
 QMainWindow {
     background-color: #2d2d2d;
+}
+
+/* Main content area */
+QWidget[objectName="mainContent"] {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+QWidget[objectName="contentArea"] {
+    background-color: #1a1a1a;
+    color: #ffffff;
 }
 
 QPushButton {
@@ -50,6 +61,27 @@ QTextEdit {
 
 QLabel {
     color: #ffffff;
+    background-color: transparent;
+}
+
+/* Welcome page specific labels */
+QLabel[objectName="welcomeTitle"] {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: transparent;
+}
+
+QLabel[objectName="welcomeSubtitle"] {
+    color: #cccccc;
+    font-size: 16px;
+    background-color: transparent;
+}
+
+QLabel[objectName="welcomeDescription"] {
+    color: #ffffff;
+    font-size: 14px;
+    background-color: transparent;
 }
 
 QProgressBar {
@@ -61,4 +93,83 @@ QProgressBar {
 QProgressBar::chunk {
     background-color: #ff6b6b;
     border-radius: 3px;
+}
+
+/* Sidebar styling */
+#sidebarApp {
+    background-color: #2d2d2d;
+    min-width: 350px;
+    max-width: 400px;
+    border-right: 2px solid #404040;
+    padding: 20px;
+}
+
+/* Logo styling */
+#sidebarApp QLabel[objectName="logo"] {
+    min-width: 200px;
+    min-height: 60px;
+    max-width: 250px;
+    max-height: 80px;
+    background-color: transparent;
+    border: none;
+    padding: 5px;
+    margin: 5px;
+    qproperty-scaledContents: true;
+    qproperty-alignment: "AlignCenter";
+}
+
+/* Sidebar text styling */
+#sidebarApp QLabel {
+    color: #ffffff;
+    font-size: 14px;
+    padding: 8px 12px;
+}
+
+/* Current step highlighting */
+#sidebarApp QLabel[objectName="currentStep"] {
+    background-color: #ff6b6b;
+    color: #2d2d2d;
+    font-weight: bold;
+    border-radius: 4px;
+    margin: 2px 8px;
+}
+
+/* Step list styling */
+#sidebarApp QListView {
+    background-color: transparent;
+    border: none;
+    outline: none;
+}
+
+#sidebarApp QListView::item {
+    background-color: transparent;
+    color: #cccccc;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    margin: 2px 8px;
+}
+
+#sidebarApp QListView::item:selected {
+    background-color: #404040;
+    color: #ffffff;
+}
+
+#sidebarApp QListView::item:hover {
+    background-color: #505050;
+    color: #ffffff;
+}
+
+/* Progress bar in sidebar */
+#sidebarApp QProgressBar {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 8px;
+    height: 8px;
+    margin: 10px 20px;
+}
+
+#sidebarApp QProgressBar::chunk {
+    background-color: #ff6b6b;
+    border-radius: 6px;
 }

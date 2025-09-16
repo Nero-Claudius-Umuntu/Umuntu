@@ -11,3 +11,7 @@ BUG_REPORT_URL="https://github.com/Nero-Claudius-Umuntu/Umuntu/issues"
 PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
 UBUNTU_CODENAME=noble
 LOGO=umuntu-logo
+
+# Default language settings
+DEFAULT_LOCALE=en_US.UTF-8
+DEFAULT_LANGUAGE=en_US:es_419:es_ES:es_CL:es_AR:es_MX:es_CO:es_PE:es_VE:pt_BR:fr_FR:de_DE

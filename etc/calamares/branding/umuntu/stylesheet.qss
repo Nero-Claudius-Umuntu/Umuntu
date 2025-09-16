@@ -1,0 +1,257 @@
+/* Umuntu Calamares Stylesheet */
+
+/* Main window styling */
+QMainWindow {
+    background-color: #2d2d2d;
+    color: #ffffff;
+}
+
+/* Main content area styling */
+QWidget[objectName="mainContent"] {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+QWidget[objectName="contentArea"] {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+/* Welcome page specific styling */
+QWidget[objectName="welcomePage"] {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+/* General content background */
+QWidget {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+/* Sidebar styling */
+#sidebarApp {
+    background-color: #2d2d2d;
+    min-width: 350px;
+    max-width: 400px;
+    border-right: 2px solid #404040;
+    padding: 20px;
+}
+
+/* Logo container styling */
+#sidebarApp QLabel[objectName="logo"] {
+    min-width: 200px;
+    min-height: 60px;
+    max-width: 250px;
+    max-height: 80px;
+    background-color: transparent;
+    border: none;
+    padding: 5px;
+    margin: 5px;
+    qproperty-scaledContents: true;
+    qproperty-alignment: "AlignCenter";
+}
+
+/* Product name styling */
+#sidebarApp QLabel[objectName="productName"] {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px;
+    text-align: center;
+}
+
+/* Version styling */
+#sidebarApp QLabel[objectName="version"] {
+    color: #cccccc;
+    font-size: 12px;
+    padding: 5px;
+    text-align: center;
+}
+
+/* Sidebar text styling */
+#sidebarApp QLabel {
+    color: #ffffff;
+    font-size: 14px;
+    padding: 8px 12px;
+}
+
+/* Current step highlighting */
+#sidebarApp QLabel[objectName="currentStep"] {
+    background-color: #ff6b6b;
+    color: #2d2d2d;
+    font-weight: bold;
+    border-radius: 6px;
+    margin: 4px 12px;
+    padding: 10px 12px;
+}
+
+/* Step list styling */
+#sidebarApp QListView {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    margin: 10px 0px;
+}
+
+#sidebarApp QListView::item {
+    background-color: transparent;
+    color: #cccccc;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    margin: 2px 12px;
+    min-height: 20px;
+}
+
+#sidebarApp QListView::item:selected {
+    background-color: #404040;
+    color: #ffffff;
+}
+
+#sidebarApp QListView::item:hover {
+    background-color: #505050;
+    color: #ffffff;
+}
+
+/* Progress bar in sidebar */
+#sidebarApp QProgressBar {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 10px;
+    height: 12px;
+    margin: 15px 20px;
+}
+
+#sidebarApp QProgressBar::chunk {
+    background-color: #ff6b6b;
+    border-radius: 8px;
+}
+
+/* Button styling */
+QPushButton {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 6px;
+    padding: 10px 20px;
+    color: #ffffff;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+QPushButton:hover {
+    background-color: #505050;
+    border-color: #707070;
+}
+
+QPushButton:pressed {
+    background-color: #353535;
+}
+
+QPushButton:disabled {
+    background-color: #2a2a2a;
+    color: #666666;
+    border-color: #404040;
+}
+
+/* Input field styling */
+QLineEdit {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+QLineEdit:focus {
+    border-color: #ff6b6b;
+}
+
+QComboBox {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+QComboBox:focus {
+    border-color: #ff6b6b;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #ffffff;
+    margin-right: 5px;
+}
+
+/* Text area styling */
+QTextEdit {
+    background-color: #404040;
+    border: 1px solid #606060;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 14px;
+    padding: 8px;
+}
+
+/* Label styling */
+QLabel {
+    color: #ffffff;
+    font-size: 14px;
+    background-color: transparent;
+}
+
+/* Welcome page labels */
+QLabel[objectName="welcomeTitle"] {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: transparent;
+}
+
+QLabel[objectName="welcomeSubtitle"] {
+    color: #cccccc;
+    font-size: 16px;
+    background-color: transparent;
+}
+
+QLabel[objectName="welcomeDescription"] {
+    color: #ffffff;
+    font-size: 14px;
+    background-color: transparent;
+}
+
+/* General text styling for better contrast */
+QTextEdit, QPlainTextEdit {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #404040;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+/* General progress bar styling */
+QProgressBar {
+    border: 1px solid #606060;
+    border-radius: 6px;
+    background-color: #404040;
+    text-align: center;
+    color: #ffffff;
+}
+
+QProgressBar::chunk {
+    background-color: #ff6b6b;
+    border-radius: 4px;
+}
