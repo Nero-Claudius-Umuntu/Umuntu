@@ -1,29 +1,36 @@
 ---
-componentName:  umuntu
+componentName: umuntu
+
+windowExpanding:    window
+windowResizable:    true
 
 strings:
-    productName:         "Umuntu"
-    shortProductName:    "Umuntu"
-    version:             "1.0.0"
-    shortVersion:        "1.0"
-    versionedName:       "Umuntu 1.0.0"
-    shortVersionedName:  "Umuntu 1.0"
-    bootloaderEntryName: "Umuntu"
-    productUrl:          "https://github.com/umuntu/umuntu"
-    supportUrl:          "https://github.com/umuntu/umuntu/issues"
-    knownIssuesUrl:      "https://github.com/umuntu/umuntu/issues"
-    releaseNotesUrl:     "https://github.com/umuntu/umuntu/releases"
+    productName:         Umuntu
+    shortProductName:    Umuntu
+    version:             24.04
+    shortVersion:        noble
+    versionedName:       Umuntu
+    shortVersionedName:  Umuntu 24.04
+    bootloaderEntryName: Umuntu
+    productUrl:          https://github.com/Nero-Claudius-Umuntu/Umuntu
+    supportUrl:          https://github.com/Nero-Claudius-Umuntu/Umuntu/issues
 
 images:
-    productIcon:         "logo.png"
     productLogo:         "logo.png"
-    productWelcome:      "splash.png"
+    productIcon:         "logo.png"
+    productWelcome:      "welcome.png"
+
+slideshow:               "show.qml"
+
+slideshowAPI:            1
+
+windowPlacement:         free
 
 style:
-    SidebarBackground:        "#2d2d2d"
-    SidebarText:              "#ffffff"
-    SidebarTextCurrent:       "#2d2d2d"
-    SidebarBackgroundCurrent: "#ff6b6b"
-
-slideshow:               "umuntu.qml"
-slideshowAPI: 2
+   SidebarBackground:    "#912618"
+   SidebarText:          "#FFFFFF"
+   SidebarTextCurrent:   "#FFFFFF"
+   GeneralBackground:    "#8B1538"
+   GeneralText:          "#FFFFFF"
+   AccentBackground:     "#912618"
+   AccentText:           "#FFFFFF"
