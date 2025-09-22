@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Umuntu Nero
+Description=Umuntu - Nero Claudius Edition Boot Theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/umuntu-nero
+ScriptFile=/usr/share/plymouth/themes/umuntu-nero/umuntu-nero.script

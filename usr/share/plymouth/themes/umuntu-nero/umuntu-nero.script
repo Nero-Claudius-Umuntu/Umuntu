@@ -1,0 +1,93 @@
+# Umuntu Nero Plymouth Theme Script
+# "Umu! ¡Qué hermoso es este boot!" - Nero Claudius
+
+# Import necessary functions
+import os
+import math
+
+# Theme configuration
+WINDOW_WIDTH = 1920
+WINDOW_HEIGHT = 1080
+LOGO_WIDTH = 200
+LOGO_HEIGHT = 200
+PROGRESS_WIDTH = 400
+PROGRESS_HEIGHT = 20
+
+# Colors (Nero's theme: red and gold)
+BACKGROUND_COLOR = "#8B0000"  # Dark red
+TEXT_COLOR = "#FFD700"        # Gold
+PROGRESS_COLOR = "#FFD700"    # Gold
+PROGRESS_BG_COLOR = "#DC143C" # Crimson
+
+# Initialize the theme
+def init():
+    # Set background color
+    Window.SetBackgroundTopColor(BACKGROUND_COLOR)
+    Window.SetBackgroundBottomColor(BACKGROUND_COLOR)
+    
+    # Create logo
+    logo = Image("umuntu-logo.png")
+    logo.SetZ(10)
+    
+    # Position logo in center
+    logo.SetX((WINDOW_WIDTH - LOGO_WIDTH) / 2)
+    logo.SetY((WINDOW_HEIGHT - LOGO_HEIGHT) / 2 - 100)
+    
+    # Create progress bar
+    progress_bg = Rectangle(PROGRESS_WIDTH, PROGRESS_HEIGHT)
+    progress_bg.SetColor(PROGRESS_BG_COLOR)
+    progress_bg.SetX((WINDOW_WIDTH - PROGRESS_WIDTH) / 2)
+    progress_bg.SetY((WINDOW_HEIGHT - PROGRESS_HEIGHT) / 2 + 100)
+    progress_bg.SetZ(5)
+    
+    progress_bar = Rectangle(0, PROGRESS_HEIGHT)
+    progress_bar.SetColor(PROGRESS_COLOR)
+    progress_bar.SetX((WINDOW_WIDTH - PROGRESS_WIDTH) / 2)
+    progress_bar.SetY((WINDOW_HEIGHT - PROGRESS_HEIGHT) / 2 + 100)
+    progress_bar.SetZ(6)
+    
+    # Create text
+    text = Text("Umuntu - Nero Claudius Edition")
+    text.SetColor(TEXT_COLOR)
+    text.SetX((WINDOW_WIDTH - 400) / 2)
+    text.SetY((WINDOW_HEIGHT - PROGRESS_HEIGHT) / 2 + 150)
+    text.SetZ(10)
+    
+    # Store objects for animation
+    Window.SetProgressBar(progress_bar)
+    Window.SetProgressBarBackground(progress_bg)
+    Window.SetLogo(logo)
+    Window.SetText(text)
+
+# Update progress
+def update_progress(percent):
+    progress_bar = Window.GetProgressBar()
+    if progress_bar:
+        new_width = int((PROGRESS_WIDTH * percent) / 100)
+        progress_bar.SetWidth(new_width)
+
+# Handle messages
+def message_callback(text):
+    # Optional: Add custom message handling
+    pass
+
+# Handle password input
+def password_callback(text):
+    # Optional: Add custom password handling
+    pass
+
+# Handle question
+def question_callback(text):
+    # Optional: Add custom question handling
+    pass
+
+# Main update function
+def update():
+    # This function is called continuously during boot
+    # Add any animation logic here
+    pass
+
+# Cleanup
+def cleanup():
+    # Cleanup function called when theme is unloaded
+    pass

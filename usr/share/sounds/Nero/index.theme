@@ -1,11 +1,86 @@
 [Sound Theme]
 Name=Nero
 Directories=stereo
+Comment=Umuntu Nero Claudius Edition Sound Theme
+Author=Umuntu Team
+Version=1.0.0
 
 [stereo]
 OutputProfile=stereo
 
+# System Sounds
+[Desktop Login]
+Name=Desktop Login
+File=desktop-login.oga
+
+[Desktop Logout]
+Name=Desktop Logout
+File=desktop-logoff.oga
+
+[System Ready]
+Name=System Ready
+File=system-ready.oga
 
 [Alert]
-Name=Umu
+Name=Umu Alert
 File=umu.ogg
+
+[Bell]
+Name=Bell
+File=bell.oga
+
+[Complete]
+Name=Complete
+File=complete.oga
+
+[Error]
+Name=Error
+File=dialog-error.oga
+
+[Warning]
+Name=Warning
+File=dialog-warning.oga
+
+[Question]
+Name=Question
+File=dialog-question.oga
+
+[Message]
+Name=Message
+File=message.oga
+
+[New Email]
+Name=New Email
+File=message-new-email.oga
+
+[New Instant Message]
+Name=New Instant Message
+File=message-new-instant.oga
+
+[Volume Change]
+Name=Volume Change
+File=audio-volume-change.oga
+
+[Battery Low]
+Name=Battery Low
+File=battery-low.oga
+
+[Device Added]
+Name=Device Added
+File=device-added.oga
+
+[Device Removed]
+Name=Device Removed
+File=device-removed.oga
+
+[Power Plug]
+Name=Power Plug
+File=power-plug.oga
+
+[Power Unplug]
+Name=Power Unplug
+File=power-unplug.oga
+
+[Trash Empty]
+Name=Trash Empty
+File=trash-empty.oga

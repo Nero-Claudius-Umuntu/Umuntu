@@ -1,3 +1,78 @@
-desktop-image: "Nero-grub-bg.png"
-title-text: "Umuntu"
+# Umuntu GRUB Theme - Nero Claudius Edition
+# "Umu! ¡Qué hermoso es este bootloader!" - Nero Claudius
 
+# Background image
+desktop-image: "Nero-grub-bg.png"
+
+# Title text
+title-text: "Umuntu - Nero Claudius Edition"
+
+# Font settings
+title-font: "DejaVu Sans Bold 16"
+message-font: "DejaVu Sans 12"
+
+# Color scheme (Nero's red and gold theme)
+title-color: "#FFD700"
+message-color: "#FFFFFF"
+message-bg-color: "#8B0000"
+terminal-box-color: "#FFD700"
+terminal-border-color: "#8B0000"
+
+# Menu settings
+menu-color-normal: "#FFFFFF"
+menu-color-highlight: "#FFD700"
+menu-color-normal-bg: "#8B0000"
+menu-color-highlight-bg: "#DC143C"
+
+# Progress bar
+progress-bar-color: "#FFD700"
+progress-bar-bg-color: "#8B0000"
+
+# Boot menu settings
+menu-pixmap-style: "menu_*.png"
+boot-menu-entry: "🌹 Umuntu - Nero Claudius Edition"
+boot-menu-entry-highlight: "🌹 Umuntu - Nero Claudius Edition"
+
+# Timeout settings
+timeout-style: "menu"
+timeout-color: "#FFD700"
+
+# Boot options
+boot-menu-entry: "🌹 Umuntu - Nero Claudius Edition"
+boot-menu-entry-highlight: "🌹 Umuntu - Nero Claudius Edition"
+boot-menu-entry-normal: "🌹 Umuntu - Nero Claudius Edition"
+
+# Additional styling
+terminal-left: "10%"
+terminal-top: "10%"
+terminal-width: "80%"
+terminal-height: "80%"
+
+# Menu positioning
+menu-pixmap-style: "menu_*.png"
+menu-color-normal: "#FFFFFF"
+menu-color-highlight: "#FFD700"
+menu-color-normal-bg: "#8B0000"
+menu-color-highlight-bg: "#DC143C"
+
+# Boot menu entry styling
+boot-menu-entry: "🌹 Umuntu - Nero Claudius Edition"
+boot-menu-entry-highlight: "🌹 Umuntu - Nero Claudius Edition"
+boot-menu-entry-normal: "🌹 Umuntu - Nero Claudius Edition"
+
+# Additional Nero-themed elements
+menu-color-normal: "#FFFFFF"
+menu-color-highlight: "#FFD700"
+menu-color-normal-bg: "#8B0000"
+menu-color-highlight-bg: "#DC143C"
+
+# Terminal styling
+terminal-left: "10%"
+terminal-top: "10%"
+terminal-width: "80%"
+terminal-height: "80%"
+
+# Boot menu entry styling
+boot-menu-entry: "🌹 Umuntu - Nero Claudius Edition"
+boot-menu-entry-highlight: "🌹 Umuntu - Nero Claudius Edition"
+boot-menu-entry-normal: "🌹 Umuntu - Nero Claudius Edition"
