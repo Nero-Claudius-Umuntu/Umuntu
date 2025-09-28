@@ -1,0 +1,121 @@
+#!/bin/bash
+# Script para corregir el manejo de usuarios y hostname en Ubiquity
+# Evita copiar el usuario live y asegura el uso correcto del hostname
+
+set -e
+
+TARGET="${1:-/target}"
+LIVE_USER="ubuntu"  # Usuario por defecto de la sesión live
+LIVE_UID=999        # UID típico del usuario live
+
+# Función para obtener el usuario creado durante la instalación
+get_target_user() {
+    # Obtener el usuario del sistema de configuración de debconf
+    if [ -n "$UBIQUITY_USERNAME" ]; then
+        echo "$UBIQUITY_USERNAME"
+    else
+        # Buscar en /etc/passwd del target el usuario con UID >= 1000 que no sea el live user
+        chroot "$TARGET" getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 && $1 != "'$LIVE_USER'" {print $1; exit}'
+    fi
+}
+
+# Función para obtener el hostname definido por el usuario
+get_target_hostname() {
+    if [ -f "$TARGET/etc/hostname" ]; then
+        cat "$TARGET/etc/hostname" | tr -d '\n'
+    else
+        echo "umuntu"  # Hostname por defecto para Umuntu
+    fi
+}
+
+# Función para limpiar configuraciones del usuario live
+clean_live_user_configs() {
+    local target_user="$1"
+    local target_home="$TARGET/home/$target_user"
+    
+    echo "Limpiando configuraciones del usuario live para: $target_user"
+    
+    # Eliminar archivos de configuración que puedan haber sido copiados del usuario live
+    if [ -d "$target_home" ]; then
+        # Eliminar configuraciones específicas del live user
+        rm -rf "$target_home/.config/dconf/user" 2>/dev/null || true
+        rm -rf "$target_home/.gconf" 2>/dev/null || true
+        rm -rf "$target_home/.gnome" 2>/dev/null || true
+        rm -rf "$target_home/.local/share/recently-used.xbel" 2>/dev/null || true
+        
+        # Limpiar historial de bash que pueda contener comandos del live user
+        rm -f "$target_home/.bash_history" 2>/dev/null || true
+        
+        # Asegurar que los permisos sean correctos para el usuario target
+        chroot "$TARGET" chown -R "$target_user:$target_user" "/home/$target_user"
+    fi
+}
+
+# Función para configurar el hostname correctamente
+setup_hostname() {
+    local hostname="$1"
+    
+    echo "Configurando hostname: $hostname"
+    
+    # Escribir el hostname
+    echo "$hostname" > "$TARGET/etc/hostname"
+    
+    # Actualizar /etc/hosts
+    cat > "$TARGET/etc/hosts" << EOF
+127.0.0.1	localhost
+127.0.1.1	$hostname
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+EOF
+}
+
+# Función para eliminar el usuario live del sistema target si existe
+remove_live_user() {
+    echo "Verificando y eliminando usuario live si existe..."
+    
+    if chroot "$TARGET" id "$LIVE_USER" &>/dev/null; then
+        echo "Eliminando usuario live: $LIVE_USER"
+        chroot "$TARGET" userdel -r "$LIVE_USER" 2>/dev/null || true
+    fi
+    
+    # Eliminar grupo live si existe y está vacío
+    if chroot "$TARGET" getent group "$LIVE_USER" &>/dev/null; then
+        chroot "$TARGET" groupdel "$LIVE_USER" 2>/dev/null || true
+    fi
+}
+
+# Función principal
+main() {
+    echo "=== Iniciando corrección de configuración de usuarios y hostname ==="
+    
+    # Obtener el usuario target y hostname
+    TARGET_USER=$(get_target_user)
+    TARGET_HOSTNAME=$(get_target_hostname)
+    
+    if [ -z "$TARGET_USER" ]; then
+        echo "Error: No se pudo determinar el usuario target"
+        exit 1
+    fi
+    
+    echo "Usuario target: $TARGET_USER"
+    echo "Hostname target: $TARGET_HOSTNAME"
+    
+    # Limpiar configuraciones del usuario live
+    clean_live_user_configs "$TARGET_USER"
+    
+    # Configurar hostname correctamente
+    setup_hostname "$TARGET_HOSTNAME"
+    
+    # Eliminar usuario live del sistema target
+    remove_live_user
+    
+    echo "=== Corrección completada exitosamente ==="
+}
+
+# Ejecutar función principal
+main "$@"

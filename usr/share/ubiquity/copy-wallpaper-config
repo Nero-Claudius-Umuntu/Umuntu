@@ -1,0 +1,204 @@
+#!/bin/bash
+# Script para copiar configuraciones de wallpaper y GNOME del usuario live al usuario creado
+# Umuntu - Personalización de Ubuntu basado en Nero
+
+set -e
+
+TARGET="${1:-/target}"
+LIVE_USER="${2:-ubuntu}"
+TARGET_USER="${3:-}"
+
+# Función para obtener el usuario creado durante la instalación
+get_target_user() {
+    if [ -n "$TARGET_USER" ]; then
+        echo "$TARGET_USER"
+    else
+        # Buscar en /etc/passwd del target el usuario con UID >= 1000 que no sea el live user
+        chroot "$TARGET" getent passwd | awk -F: '$3 >= 1000 && $3 < 65534 && $1 != "'$LIVE_USER'" {print $1; exit}'
+    fi
+}
+
+# Función para copiar configuraciones de GNOME
+copy_gnome_config() {
+    local live_home="$1"
+    local target_user="$2"
+    local target_home="$TARGET/home/$target_user"
+    
+    echo "Umuntu: Copiando configuraciones de GNOME del usuario live al usuario $target_user"
+    
+    # Directorios de configuración de GNOME a copiar
+    local gnome_dirs=(
+        ".config/dconf"
+        ".config/gnome-settings-daemon"
+        ".local/share/gnome-background-properties"
+        ".local/share/backgrounds"
+        ".local/share/wallpapers"
+        ".cache/wallpaper"
+        ".local/share/icons"
+        ".icons"
+    )
+    
+    for dir in "${gnome_dirs[@]}"; do
+        local source_dir="$live_home/$dir"
+        local target_dir="$target_home/$dir"
+        
+        if [ -d "$source_dir" ]; then
+            echo "Umuntu: Copiando $dir del usuario live"
+            
+            # Crear directorio padre si no existe
+            mkdir -p "$(dirname "$target_dir")"
+            
+            # Copiar el directorio completo
+            cp -r "$source_dir" "$target_dir"
+            
+            # Asegurar permisos correctos
+            chmod 700 "$target_dir"
+        fi
+    done
+    
+    # Archivos específicos de configuración de GNOME
+    local gnome_files=(
+        ".config/gnome-settings-daemon/backgrounds.gschema.override"
+        ".config/dconf/user"
+        ".config/gnome-shell/gnome-shell.css"
+        ".config/gtk-3.0/gtk.css"
+    )
+    
+    for file in "${gnome_files[@]}"; do
+        local source_file="$live_home/$file"
+        local target_file="$target_home/$file"
+        
+        if [ -f "$source_file" ]; then
+            echo "Umuntu: Copiando $file del usuario live"
+            
+            # Crear directorio padre si no existe
+            mkdir -p "$(dirname "$target_file")"
+            
+            # Copiar el archivo
+            cp "$source_file" "$target_file"
+            chmod 600 "$target_file"
+        fi
+    done
+}
+
+# Función para copiar wallpapers personalizados
+copy_custom_wallpapers() {
+    local live_home="$1"
+    local target_user="$2"
+    local target_home="$TARGET/home/$target_user"
+    
+    echo "Umuntu: Copiando wallpapers personalizados del usuario live"
+    
+    # Directorios de wallpapers personalizados
+    local wallpaper_dirs=(
+        ".local/share/backgrounds"
+        ".local/share/wallpapers"
+        "Pictures/Wallpapers"
+        "Imágenes/Fondos"
+    )
+    
+    for dir in "${wallpaper_dirs[@]}"; do
+        local source_dir="$live_home/$dir"
+        local target_dir="$target_home/$dir"
+        
+        if [ -d "$source_dir" ] && [ "$(ls -A "$source_dir" 2>/dev/null)" ]; then
+            echo "Umuntu: Copiando wallpapers de $dir"
+            
+            # Crear directorio padre si no existe
+            mkdir -p "$(dirname "$target_dir")"
+            
+            # Copiar el directorio completo
+            cp -r "$source_dir" "$target_dir"
+            
+            # Asegurar permisos correctos
+            chmod 755 "$target_dir"
+        fi
+    done
+}
+
+# Función para copiar configuraciones de cursor
+copy_cursor_config() {
+    local live_home="$1"
+    local target_user="$2"
+    local target_home="$TARGET/home/$target_user"
+    
+    echo "Umuntu: Copiando configuraciones de cursor del usuario live"
+    
+    # Obtener el tema de cursor actual del usuario live
+    local cursor_theme=""
+    if [ -f "$live_home/.config/dconf/user" ]; then
+        cursor_theme=$(grep -o 'cursor-theme=[^]]*' "$live_home/.config/dconf/user" | cut -d'=' -f2 | tr -d "'" | head -1)
+    fi
+    
+    # Si no se encontró en dconf, intentar obtenerlo de gsettings
+    if [ -z "$cursor_theme" ]; then
+        cursor_theme=$(sudo -u "$(whoami)" gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | tr -d "'" || echo "")
+    fi
+    
+    if [ -n "$cursor_theme" ] && [ "$cursor_theme" != "Adwaita" ]; then
+        echo "Umuntu: Tema de cursor detectado: $cursor_theme"
+        
+        # Aplicar el tema de cursor al usuario target
+        chroot "$TARGET" sudo -u "$target_user" gsettings set org.gnome.desktop.interface cursor-theme "$cursor_theme" 2>/dev/null || true
+        
+        # También aplicar para el greeter (pantalla de login)
+        chroot "$TARGET" sudo -u "$target_user" gsettings set org.gnome.desktop.interface:GNOME-Greeter cursor-theme "$cursor_theme" 2>/dev/null || true
+        
+        echo "Umuntu: Tema de cursor aplicado: $cursor_theme"
+    else
+        echo "Umuntu: No se detectó tema de cursor personalizado, usando configuración por defecto"
+    fi
+}
+
+# Función para aplicar configuraciones de gsettings
+apply_gsettings() {
+    local target_user="$1"
+    
+    echo "Umuntu: Aplicando configuraciones de gsettings para el usuario $target_user"
+    
+    # Aplicar configuraciones de fondo de pantalla si existen
+    if [ -f "$TARGET/home/$target_user/.config/dconf/user" ]; then
+        echo "Umuntu: Aplicando configuraciones de dconf del usuario live"
+        
+        # Copiar el archivo de configuración de dconf
+        chroot "$TARGET" sudo -u "$target_user" dconf load / < "/home/$target_user/.config/dconf/user" 2>/dev/null || true
+    fi
+}
+
+# Función principal
+main() {
+    echo "Umuntu: Iniciando copia de configuraciones de wallpaper y GNOME"
+    
+    # Obtener el usuario target
+    TARGET_USER=$(get_target_user)
+    if [ -z "$TARGET_USER" ]; then
+        echo "Umuntu: No se pudo determinar el usuario target"
+        exit 1
+    fi
+    
+    echo "Umuntu: Usuario target: $TARGET_USER"
+    
+    # Obtener el directorio home del usuario live
+    LIVE_HOME="/home/$LIVE_USER"
+    if [ ! -d "$LIVE_HOME" ]; then
+        echo "Umuntu: No se encontró el directorio home del usuario live: $LIVE_HOME"
+        exit 1
+    fi
+    
+    # Copiar configuraciones de GNOME
+    copy_gnome_config "$LIVE_HOME" "$TARGET_USER"
+    
+    # Copiar wallpapers personalizados
+    copy_custom_wallpapers "$LIVE_HOME" "$TARGET_USER"
+    
+    # Copiar configuraciones de cursor
+    copy_cursor_config "$LIVE_HOME" "$TARGET_USER"
+    
+    # Aplicar configuraciones de gsettings
+    apply_gsettings "$TARGET_USER"
+    
+    echo "Umuntu: Configuraciones de wallpaper y GNOME copiadas exitosamente"
+}
+
+# Ejecutar función principal
+main "$@"

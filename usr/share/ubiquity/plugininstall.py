@@ -293,6 +293,9 @@ class Install(install_misc.InstallBase):
         self.copy_logs()
         self.save_random_seed()
 
+        # Umuntu: Corregir configuración de usuarios y hostname
+        self.fix_user_and_hostname_setup()
+
         self.db.progress('SET', self.end)
 
     def _get_uid_gid_on_target(self, target_user):
@@ -445,7 +448,7 @@ class Install(install_misc.InstallBase):
         except debconf.DebconfError:
             domain = ''
         if hostname == '':
-            hostname = 'ubuntu'
+            hostname = 'umuntu'  # Cambio para Umuntu: usar hostname por defecto personalizado
 
         with open(self.target_file('etc/hosts'), 'w') as hosts:
             print("127.0.0.1\tlocalhost", file=hosts)
@@ -1705,6 +1708,7 @@ class Install(install_misc.InstallBase):
         """Copy GNOME wallpaper cache for the benefit of ureadahead.
 
         Only do this on systems with gnome-settings-daemon.
+        Umuntu: Modificado para copiar wallpaper del usuario live al usuario creado.
         """
         if 'UBIQUITY_OEM_USER_CONFIG' in os.environ:
             return
@@ -1725,9 +1729,11 @@ class Install(install_misc.InstallBase):
         target_user_cache_dir = self.target_file('home', target_user, '.cache')
         target_user_wallpaper_cache_dir = os.path.join(target_user_cache_dir,
                                                        'wallpaper')
-        if (not os.path.isdir(target_user_wallpaper_cache_dir) and
-                os.path.isdir(casper_user_wallpaper_cache_dir)):
-
+        
+        # Umuntu: Siempre copiar el wallpaper del usuario live al usuario creado
+        if os.path.isdir(casper_user_wallpaper_cache_dir):
+            syslog.syslog('Umuntu: Copiando wallpaper del usuario live al usuario creado')
+            
             # copy to targeted user
             uid = subprocess.Popen(
                 ['chroot', self.target, 'sudo', '-u', target_user, '--',
@@ -1741,10 +1747,201 @@ class Install(install_misc.InstallBase):
                 universal_newlines=True).communicate()[0].strip('\n')
             uid = int(uid)
             gid = int(gid)
+            
+            # Crear directorio de destino si no existe
+            if not os.path.exists(target_user_wallpaper_cache_dir):
+                os.makedirs(target_user_wallpaper_cache_dir, mode=0o700)
+            
+            # Copiar el cache del wallpaper
             self.copy_tree(casper_user_wallpaper_cache_dir,
                            target_user_wallpaper_cache_dir, uid, gid)
             os.chmod(target_user_cache_dir, 0o700)
             os.chmod(target_user_wallpaper_cache_dir, 0o700)
+            
+            # Umuntu: También copiar configuraciones de fondo de pantalla de GNOME
+            self.copy_gnome_wallpaper_settings(casper_user_home, target_user)
+            
+            syslog.syslog('Umuntu: Wallpaper copiado exitosamente')
+        else:
+            syslog.syslog('Umuntu: No se encontró cache de wallpaper del usuario live')
+
+    def copy_gnome_wallpaper_settings(self, casper_user_home, target_user):
+        """Copiar configuraciones de fondo de pantalla de GNOME del usuario live al usuario creado.
+        
+        Esto incluye configuraciones de gsettings y archivos de configuración de GNOME.
+        """
+        try:
+            # Usar nuestro script especializado para copiar configuraciones de wallpaper
+            script_path = '/usr/share/ubiquity/copy-wallpaper-config'
+            if os.path.exists(script_path):
+                syslog.syslog('Umuntu: Ejecutando script especializado para copiar configuraciones de wallpaper')
+                
+                # Obtener el nombre del usuario live
+                try:
+                    casper_user = pwd.getpwuid(999).pw_name
+                except KeyError:
+                    casper_user = 'ubuntu'  # Fallback
+                
+                # Ejecutar el script
+                ret = subprocess.call([script_path, self.target, casper_user, target_user])
+                if ret == 0:
+                    syslog.syslog('Umuntu: Script de wallpaper ejecutado exitosamente')
+                else:
+                    syslog.syslog(syslog.LOG_WARNING, 
+                                 'Umuntu: Script de wallpaper falló con código %d' % ret)
+            else:
+                syslog.syslog(syslog.LOG_WARNING, 
+                             'Umuntu: Script de wallpaper no encontrado, usando método alternativo')
+                
+                # Método alternativo si el script no existe
+                self._copy_gnome_wallpaper_settings_fallback(casper_user_home, target_user)
+            
+        except Exception as e:
+            syslog.syslog(syslog.LOG_WARNING, 
+                         'Umuntu: Error copiando configuraciones de GNOME: %s' % str(e))
+
+    def _copy_gnome_wallpaper_settings_fallback(self, casper_user_home, target_user):
+        """Método alternativo para copiar configuraciones de GNOME si el script no está disponible."""
+        try:
+            # Obtener UID y GID del usuario target
+            uid = subprocess.Popen(
+                ['chroot', self.target, 'sudo', '-u', target_user, '--',
+                 'id', '-u'],
+                stdout=subprocess.PIPE,
+                universal_newlines=True).communicate()[0].strip('\n')
+            gid = subprocess.Popen(
+                ['chroot', self.target, 'sudo', '-u', target_user, '--',
+                 'id', '-g'],
+                stdout=subprocess.PIPE,
+                universal_newlines=True).communicate()[0].strip('\n')
+            uid = int(uid)
+            gid = int(gid)
+            
+            # Directorios de configuración de GNOME a copiar
+            gnome_config_dirs = [
+                '.config/dconf',
+                '.config/gnome-settings-daemon',
+                '.local/share/gnome-background-properties',
+                '.local/share/backgrounds',
+                '.local/share/icons',
+                '.icons'
+            ]
+            
+            for config_dir in gnome_config_dirs:
+                source_dir = os.path.join(casper_user_home, config_dir)
+                target_dir = self.target_file('home', target_user, config_dir)
+                
+                if os.path.exists(source_dir) and os.path.isdir(source_dir):
+                    syslog.syslog('Umuntu: Copiando %s del usuario live' % config_dir)
+                    
+                    # Crear directorio padre si no existe
+                    parent_dir = os.path.dirname(target_dir)
+                    if not os.path.exists(parent_dir):
+                        os.makedirs(parent_dir, mode=0o755)
+                    
+                    # Copiar el directorio completo
+                    self.copy_tree(source_dir, target_dir, uid, gid)
+                    
+                    # Asegurar permisos correctos
+                    os.chmod(target_dir, 0o700)
+            
+            # Copiar archivos específicos de configuración de GNOME
+            gnome_config_files = [
+                '.config/gnome-settings-daemon/backgrounds.gschema.override',
+                '.config/dconf/user'
+            ]
+            
+            for config_file in gnome_config_files:
+                source_file = os.path.join(casper_user_home, config_file)
+                target_file = self.target_file('home', target_user, config_file)
+                
+                if os.path.exists(source_file) and os.path.isfile(source_file):
+                    syslog.syslog('Umuntu: Copiando %s del usuario live' % config_file)
+                    
+                    # Crear directorio padre si no existe
+                    parent_dir = os.path.dirname(target_file)
+                    if not os.path.exists(parent_dir):
+                        os.makedirs(parent_dir, mode=0o755)
+                    
+                    # Copiar el archivo
+                    shutil.copy2(source_file, target_file)
+                    os.chown(target_file, uid, gid)
+                    os.chmod(target_file, 0o600)
+            
+            # Copiar wallpapers personalizados si existen
+            custom_wallpapers_source = os.path.join(casper_user_home, '.local/share/backgrounds')
+            custom_wallpapers_target = self.target_file('home', target_user, '.local/share/backgrounds')
+            
+            if os.path.exists(custom_wallpapers_source) and os.path.isdir(custom_wallpapers_source):
+                syslog.syslog('Umuntu: Copiando wallpapers personalizados del usuario live')
+                self.copy_tree(custom_wallpapers_source, custom_wallpapers_target, uid, gid)
+            
+            # Copiar configuraciones de cursor
+            self._copy_cursor_settings_fallback(casper_user_home, target_user)
+            
+            syslog.syslog('Umuntu: Configuraciones de GNOME copiadas exitosamente (método alternativo)')
+            
+        except Exception as e:
+            syslog.syslog(syslog.LOG_WARNING, 
+                         'Umuntu: Error en método alternativo de GNOME: %s' % str(e))
+
+    def _copy_cursor_settings_fallback(self, casper_user_home, target_user):
+        """Método alternativo para copiar configuraciones de cursor si el script no está disponible."""
+        try:
+            syslog.syslog('Umuntu: Copiando configuraciones de cursor del usuario live')
+            
+            # Obtener el tema de cursor actual del usuario live
+            cursor_theme = None
+            
+            # Intentar obtener de dconf
+            dconf_file = os.path.join(casper_user_home, '.config/dconf/user')
+            if os.path.exists(dconf_file):
+                try:
+                    with open(dconf_file, 'r') as f:
+                        content = f.read()
+                        import re
+                        match = re.search(r'cursor-theme=([^\]]+)', content)
+                        if match:
+                            cursor_theme = match.group(1).strip("'\"")
+                except Exception:
+                    pass
+            
+            # Si no se encontró en dconf, intentar obtenerlo de gsettings
+            if not cursor_theme:
+                try:
+                    result = subprocess.run(['gsettings', 'get', 'org.gnome.desktop.interface', 'cursor-theme'], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        cursor_theme = result.stdout.strip().strip("'\"")
+                except Exception:
+                    pass
+            
+            if cursor_theme and cursor_theme != 'Adwaita':
+                syslog.syslog('Umuntu: Tema de cursor detectado: %s' % cursor_theme)
+                
+                # Aplicar el tema de cursor al usuario target
+                try:
+                    subprocess.run(['chroot', self.target, 'sudo', '-u', target_user, 
+                                   'gsettings', 'set', 'org.gnome.desktop.interface', 
+                                   'cursor-theme', cursor_theme], 
+                                  timeout=10, check=False)
+                    
+                    # También aplicar para el greeter (pantalla de login)
+                    subprocess.run(['chroot', self.target, 'sudo', '-u', target_user, 
+                                   'gsettings', 'set', 'org.gnome.desktop.interface:GNOME-Greeter', 
+                                   'cursor-theme', cursor_theme], 
+                                  timeout=10, check=False)
+                    
+                    syslog.syslog('Umuntu: Tema de cursor aplicado: %s' % cursor_theme)
+                except Exception as e:
+                    syslog.syslog(syslog.LOG_WARNING, 
+                                 'Umuntu: Error aplicando tema de cursor: %s' % str(e))
+            else:
+                syslog.syslog('Umuntu: No se detectó tema de cursor personalizado, usando configuración por defecto')
+                
+        except Exception as e:
+            syslog.syslog(syslog.LOG_WARNING, 
+                         'Umuntu: Error copiando configuraciones de cursor: %s' % str(e))
 
     def copy_dcd(self):
         """Install the Distribution Channel Descriptor (DCD) file."""
@@ -1843,6 +2040,55 @@ class Install(install_misc.InstallBase):
             pass
         finally:
             os.umask(old_umask)
+
+    def fix_user_and_hostname_setup(self):
+        """Corregir configuración de usuarios y hostname para Umuntu.
+        
+        Evita copiar el usuario live y asegura el uso correcto del hostname
+        definido por el usuario durante la instalación.
+        """
+        if 'UBIQUITY_OEM_USER_CONFIG' in os.environ:
+            return
+            
+        syslog.syslog('Umuntu: Iniciando corrección de usuarios y hostname')
+        
+        try:
+            # Obtener el usuario creado durante la instalación
+            target_user = self.db.get('passwd/username')
+            if not target_user:
+                syslog.syslog(syslog.LOG_WARNING, 
+                             'Umuntu: No se pudo obtener el usuario target')
+                return
+                
+            # Obtener el hostname definido por el usuario
+            try:
+                hostname = self.db.get('netcfg/get_hostname')
+                if not hostname:
+                    hostname = 'umuntu'  # Hostname por defecto para Umuntu
+            except debconf.DebconfError:
+                hostname = 'umuntu'
+            
+            # Establecer variables de entorno para el script
+            env = dict(os.environ)
+            env['UBIQUITY_USERNAME'] = target_user
+            
+            # Ejecutar nuestro script de corrección
+            script_path = '/usr/share/ubiquity/fix-user-setup'
+            if os.path.exists(script_path):
+                syslog.syslog('Umuntu: Ejecutando script de corrección de usuarios')
+                ret = subprocess.call([script_path, self.target], env=env)
+                if ret != 0:
+                    syslog.syslog(syslog.LOG_WARNING, 
+                                 'Umuntu: Script de corrección falló con código %d' % ret)
+                else:
+                    syslog.syslog('Umuntu: Corrección de usuarios completada exitosamente')
+            else:
+                syslog.syslog(syslog.LOG_WARNING, 
+                             'Umuntu: Script de corrección no encontrado: %s' % script_path)
+                             
+        except Exception as e:
+            syslog.syslog(syslog.LOG_ERR, 
+                         'Umuntu: Error en corrección de usuarios: %s' % str(e))
 
     def cleanup(self):
         """Miscellaneous cleanup tasks."""
