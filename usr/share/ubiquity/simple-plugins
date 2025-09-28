@@ -5,7 +5,24 @@ set -e
 if [ "$1" = "prepare" ]; then
     FREEONLY="--free-only"
     NOOEM=""
-    db_input high ubiquity/use_nonfree || true
+    
+    # Umuntu: Detectar si es una ISO personalizada
+    if [ -x "/usr/share/ubiquity/detect-custom-iso" ]; then
+        echo "Umuntu: Ejecutando detección de ISO personalizada"
+        /usr/share/ubiquity/detect-custom-iso
+        if [ $? -eq 0 ]; then
+            echo "Umuntu: ISO personalizada detectada - saltando pregunta de software adicional"
+            # No hacer db_input para software adicional en ISOs personalizadas
+            db_set ubiquity/use_nonfree false
+        else
+            echo "Umuntu: ISO estándar detectada - mostrando pregunta de software adicional"
+            db_input high ubiquity/use_nonfree || true
+        fi
+    else
+        echo "Umuntu: Script de detección no encontrado - usando comportamiento por defecto"
+        db_input high ubiquity/use_nonfree || true
+    fi
+    
     db_get ubiquity/use_nonfree
     if [ "$RET" = "true" ]; then
 	    FREEONLY=""

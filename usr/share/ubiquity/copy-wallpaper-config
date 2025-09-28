@@ -36,6 +36,9 @@ copy_gnome_config() {
         ".cache/wallpaper"
         ".local/share/icons"
         ".icons"
+        ".local/share/gnome-shell"
+        ".local/share/themes"
+        ".themes"
     )
     
     for dir in "${gnome_dirs[@]}"; do
@@ -116,6 +119,97 @@ copy_custom_wallpapers() {
     done
 }
 
+# Función para copiar extensiones de GNOME
+copy_gnome_extensions() {
+    local live_home="$1"
+    local target_user="$2"
+    local target_home="$TARGET/home/$target_user"
+    
+    echo "Umuntu: Copiando extensiones de GNOME del usuario live"
+    
+    # Directorios de extensiones de GNOME
+    local extension_dirs=(
+        ".local/share/gnome-shell/extensions"
+        ".local/share/gnome-shell/theme"
+        ".local/share/themes"
+        ".themes"
+    )
+    
+    for dir in "${extension_dirs[@]}"; do
+        local source_dir="$live_home/$dir"
+        local target_dir="$target_home/$dir"
+        
+        if [ -d "$source_dir" ] && [ "$(ls -A "$source_dir" 2>/dev/null)" ]; then
+            echo "Umuntu: Copiando extensiones de $dir"
+            
+            # Crear directorio padre si no existe
+            mkdir -p "$(dirname "$target_dir")"
+            
+            # Copiar el directorio completo
+            cp -r "$source_dir" "$target_dir"
+            
+            # Asegurar permisos correctos
+            chmod 755 "$target_dir"
+        fi
+    done
+    
+    # Copiar configuraciones específicas de extensiones
+    local extension_config_files=(
+        ".config/gnome-shell-extensions"
+        ".config/gnome-shell"
+    )
+    
+    for config_dir in "${extension_config_files[@]}"; do
+        local source_config="$live_home/$config_dir"
+        local target_config="$target_home/$config_dir"
+        
+        if [ -d "$source_config" ]; then
+            echo "Umuntu: Copiando configuraciones de extensiones de $config_dir"
+            
+            # Crear directorio padre si no existe
+            mkdir -p "$(dirname "$target_config")"
+            
+            # Copiar el directorio completo
+            cp -r "$source_config" "$target_config"
+            
+            # Asegurar permisos correctos
+            chmod 700 "$target_config"
+        fi
+    done
+    
+    # Aplicar configuraciones de extensiones habilitadas
+    apply_gnome_extensions "$target_user"
+}
+
+# Función para aplicar extensiones de GNOME
+apply_gnome_extensions() {
+    local target_user="$1"
+    
+    echo "Umuntu: Aplicando configuraciones de extensiones de GNOME"
+    
+    # Obtener extensiones habilitadas del usuario live
+    local enabled_extensions=""
+    if [ -f "/home/$(whoami)/.config/dconf/user" ]; then
+        enabled_extensions=$(grep -o 'enabled-extensions=\[[^]]*\]' "/home/$(whoami)/.config/dconf/user" | sed 's/enabled-extensions=\[//;s/\]//' | tr -d "'" | tr ',' '\n' | tr -d ' ')
+    fi
+    
+    if [ -n "$enabled_extensions" ]; then
+        echo "Umuntu: Extensiones habilitadas detectadas: $enabled_extensions"
+        
+        # Aplicar extensiones habilitadas al usuario target
+        for ext in $enabled_extensions; do
+            if [ -n "$ext" ]; then
+                echo "Umuntu: Habilitando extensión: $ext"
+                chroot "$TARGET" sudo -u "$target_user" gsettings set org.gnome.shell enabled-extensions "['$ext']" 2>/dev/null || true
+            fi
+        done
+        
+        echo "Umuntu: Extensiones de GNOME aplicadas exitosamente"
+    else
+        echo "Umuntu: No se detectaron extensiones habilitadas"
+    fi
+}
+
 # Función para copiar configuraciones de cursor
 copy_cursor_config() {
     local live_home="$1"
@@ -190,6 +284,9 @@ main() {
     
     # Copiar wallpapers personalizados
     copy_custom_wallpapers "$LIVE_HOME" "$TARGET_USER"
+    
+    # Copiar extensiones de GNOME
+    copy_gnome_extensions "$LIVE_HOME" "$TARGET_USER"
     
     # Copiar configuraciones de cursor
     copy_cursor_config "$LIVE_HOME" "$TARGET_USER"

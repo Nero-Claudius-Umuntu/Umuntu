@@ -1,0 +1,130 @@
+#!/bin/bash
+# Script para detectar si es una ISO personalizada de Umuntu
+# Esto determina si se debe saltar la pregunta de software adicional
+
+set -e
+
+# Función para detectar si es una ISO personalizada de Umuntu
+detect_custom_iso() {
+    local is_custom=false
+    
+    # Indicadores de que es una ISO personalizada de Umuntu
+    local indicators=(
+        "/usr/share/plymouth/umuntu-logo.png"
+        "/usr/share/backgrounds/Nero-wallpaper_1.jpg"
+        "/usr/share/icons/Nero-Red"
+        "/usr/share/ubiquity/fix-user-setup"
+        "/usr/share/ubiquity/copy-wallpaper-config"
+        "/etc/os-release"
+    )
+    
+    # Verificar archivos específicos de Umuntu
+    for indicator in "${indicators[@]}"; do
+        if [ -e "$indicator" ]; then
+            # Verificar contenido específico para algunos archivos
+            case "$indicator" in
+                "/etc/os-release")
+                    if grep -q "Umuntu" "$indicator" 2>/dev/null; then
+                        is_custom=true
+                        break
+                    fi
+                    ;;
+                "/usr/share/plymouth/umuntu-logo.png")
+                    is_custom=true
+                    break
+                    ;;
+                "/usr/share/backgrounds/Nero-wallpaper_1.jpg")
+                    is_custom=true
+                    break
+                    ;;
+                "/usr/share/icons/Nero-Red")
+                    is_custom=true
+                    break
+                    ;;
+                "/usr/share/ubiquity/fix-user-setup")
+                    is_custom=true
+                    break
+                    ;;
+                "/usr/share/ubiquity/copy-wallpaper-config")
+                    is_custom=true
+                    break
+                    ;;
+            esac
+        fi
+    done
+    
+    # Verificar si ya hay software adicional instalado (indicador de ISO personalizada)
+    if [ "$is_custom" = false ]; then
+        local nonfree_packages=(
+            "ubuntu-restricted-extras"
+            "libavcodec-extra"
+            "gstreamer1.0-plugins-bad"
+            "gstreamer1.0-plugins-ugly"
+            "gstreamer1.0-libav"
+            "flashplugin-installer"
+            "adobe-flashplugin"
+        )
+        
+        for package in "${nonfree_packages[@]}"; do
+            if dpkg -l "$package" >/dev/null 2>&1; then
+                is_custom=true
+                break
+            fi
+        done
+    fi
+    
+    # Verificar si hay configuraciones personalizadas de Umuntu
+    if [ "$is_custom" = false ]; then
+        if [ -f "/usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override" ]; then
+            if grep -q "Nero" "/usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override" 2>/dev/null; then
+                is_custom=true
+            fi
+        fi
+    fi
+    
+    echo "$is_custom"
+}
+
+# Función para configurar Ubiquity según el tipo de ISO
+configure_ubiquity() {
+    local is_custom="$1"
+    
+    if [ "$is_custom" = "true" ]; then
+        echo "Umuntu: Detectada ISO personalizada - deshabilitando pregunta de software adicional"
+        
+        # Configurar para que no pregunte sobre software adicional
+        db_set ubiquity/use_nonfree false
+        
+        # Log para debugging
+        logger -t ubiquity "Umuntu: ISO personalizada detectada, software adicional deshabilitado"
+        
+        return 0
+    else
+        echo "Umuntu: ISO estándar detectada - manteniendo pregunta de software adicional"
+        
+        # Configurar por defecto como "No" para ISOs estándar
+        db_set ubiquity/use_nonfree false
+        
+        # Log para debugging
+        logger -t ubiquity "Umuntu: ISO estándar detectada, pregunta de software adicional habilitada"
+        
+        return 1
+    fi
+}
+
+# Función principal
+main() {
+    echo "Umuntu: Iniciando detección de tipo de ISO"
+    
+    # Detectar si es una ISO personalizada
+    local is_custom_iso
+    is_custom_iso=$(detect_custom_iso)
+    
+    # Configurar Ubiquity según el tipo de ISO
+    configure_ubiquity "$is_custom_iso"
+    
+    echo "Umuntu: Configuración completada"
+}
+
+# Ejecutar función principal
+main "$@"

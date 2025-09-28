@@ -1269,12 +1269,23 @@ class Install(install_misc.InstallBase):
 
     def install_restricted_extras(self):
         packages = []
-        if self.db.get('ubiquity/use_nonfree') == 'true':
+        
+        # Umuntu: Verificar si es una ISO personalizada antes de instalar software adicional
+        if self._is_custom_iso():
+            syslog.syslog('Umuntu: ISO personalizada detectada - omitiendo instalación de software adicional')
+            # Solo instalar paquetes registrados previamente (ya incluidos en la ISO)
+            packages.extend(install_misc.query_recorded_installed())
+        elif self.db.get('ubiquity/use_nonfree') == 'true':
             self.db.progress('INFO', 'ubiquity/install/nonfree')
             packages.extend(self.db.get('ubiquity/nonfree_package').split())
-        # also install recorded non-free packages
-        packages.extend(install_misc.query_recorded_installed())
-        self.do_install(packages)
+            # also install recorded non-free packages
+            packages.extend(install_misc.query_recorded_installed())
+        else:
+            # Solo instalar paquetes registrados previamente
+            packages.extend(install_misc.query_recorded_installed())
+        
+        if packages:
+            self.do_install(packages)
 
     def install_extras(self):
         """Try to install packages requested by installer components."""
@@ -1824,7 +1835,12 @@ class Install(install_misc.InstallBase):
                 '.local/share/gnome-background-properties',
                 '.local/share/backgrounds',
                 '.local/share/icons',
-                '.icons'
+                '.icons',
+                '.local/share/gnome-shell',
+                '.local/share/themes',
+                '.themes',
+                '.config/gnome-shell-extensions',
+                '.config/gnome-shell'
             ]
             
             for config_dir in gnome_config_dirs:
@@ -1878,6 +1894,9 @@ class Install(install_misc.InstallBase):
             
             # Copiar configuraciones de cursor
             self._copy_cursor_settings_fallback(casper_user_home, target_user)
+            
+            # Copiar extensiones de GNOME
+            self._copy_gnome_extensions_fallback(casper_user_home, target_user)
             
             syslog.syslog('Umuntu: Configuraciones de GNOME copiadas exitosamente (método alternativo)')
             
@@ -1942,6 +1961,190 @@ class Install(install_misc.InstallBase):
         except Exception as e:
             syslog.syslog(syslog.LOG_WARNING, 
                          'Umuntu: Error copiando configuraciones de cursor: %s' % str(e))
+
+    def _copy_gnome_extensions_fallback(self, casper_user_home, target_user):
+        """Método alternativo para copiar extensiones de GNOME si el script no está disponible."""
+        try:
+            syslog.syslog('Umuntu: Copiando extensiones de GNOME del usuario live')
+            
+            # Obtener UID y GID del usuario target
+            uid = subprocess.Popen(
+                ['chroot', self.target, 'sudo', '-u', target_user, '--',
+                 'id', '-u'],
+                stdout=subprocess.PIPE,
+                universal_newlines=True).communicate()[0].strip('\n')
+            gid = subprocess.Popen(
+                ['chroot', self.target, 'sudo', '-u', target_user, '--',
+                 'id', '-g'],
+                stdout=subprocess.PIPE,
+                universal_newlines=True).communicate()[0].strip('\n')
+            uid = int(uid)
+            gid = int(gid)
+            
+            # Directorios de extensiones de GNOME a copiar
+            extension_dirs = [
+                '.local/share/gnome-shell/extensions',
+                '.local/share/gnome-shell/theme',
+                '.local/share/themes',
+                '.themes',
+                '.config/gnome-shell-extensions',
+                '.config/gnome-shell'
+            ]
+            
+            for ext_dir in extension_dirs:
+                source_dir = os.path.join(casper_user_home, ext_dir)
+                target_dir = self.target_file('home', target_user, ext_dir)
+                
+                if os.path.exists(source_dir) and os.path.isdir(source_dir):
+                    syslog.syslog('Umuntu: Copiando extensiones de %s del usuario live' % ext_dir)
+                    
+                    # Crear directorio padre si no existe
+                    parent_dir = os.path.dirname(target_dir)
+                    if not os.path.exists(parent_dir):
+                        os.makedirs(parent_dir, mode=0o755)
+                    
+                    # Copiar el directorio completo
+                    self.copy_tree(source_dir, target_dir, uid, gid)
+                    
+                    # Asegurar permisos correctos
+                    os.chmod(target_dir, 0o700)
+            
+            # Aplicar extensiones habilitadas
+            self._apply_gnome_extensions_fallback(target_user)
+            
+            syslog.syslog('Umuntu: Extensiones de GNOME copiadas exitosamente')
+            
+        except Exception as e:
+            syslog.syslog(syslog.LOG_WARNING, 
+                         'Umuntu: Error copiando extensiones de GNOME: %s' % str(e))
+
+    def _apply_gnome_extensions_fallback(self, target_user):
+        """Aplicar extensiones de GNOME habilitadas."""
+        try:
+            syslog.syslog('Umuntu: Aplicando extensiones de GNOME habilitadas')
+            
+            # Obtener extensiones habilitadas del usuario live
+            enabled_extensions = []
+            
+            # Intentar obtener de dconf
+            dconf_file = os.path.join('/home', os.getenv('USER', 'ubuntu'), '.config/dconf/user')
+            if os.path.exists(dconf_file):
+                try:
+                    with open(dconf_file, 'r') as f:
+                        content = f.read()
+                        import re
+                        match = re.search(r'enabled-extensions=\[([^\]]+)\]', content)
+                        if match:
+                            extensions_str = match.group(1)
+                            # Parsear las extensiones
+                            extensions = re.findall(r"'([^']+)'", extensions_str)
+                            enabled_extensions.extend(extensions)
+                except Exception:
+                    pass
+            
+            # Si no se encontró en dconf, intentar obtenerlo de gsettings
+            if not enabled_extensions:
+                try:
+                    result = subprocess.run(['gsettings', 'get', 'org.gnome.shell', 'enabled-extensions'], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        import json
+                        extensions = json.loads(result.stdout.strip())
+                        if isinstance(extensions, list):
+                            enabled_extensions = extensions
+                except Exception:
+                    pass
+            
+            if enabled_extensions:
+                syslog.syslog('Umuntu: Extensiones habilitadas detectadas: %s' % ', '.join(enabled_extensions))
+                
+                # Aplicar extensiones habilitadas al usuario target
+                for ext in enabled_extensions:
+                    if ext and ext.strip():
+                        try:
+                            subprocess.run(['chroot', self.target, 'sudo', '-u', target_user, 
+                                           'gsettings', 'set', 'org.gnome.shell', 
+                                           'enabled-extensions', "['%s']" % ext.strip()], 
+                                          timeout=10, check=False)
+                            syslog.syslog('Umuntu: Extensión habilitada: %s' % ext.strip())
+                        except Exception as e:
+                            syslog.syslog(syslog.LOG_WARNING, 
+                                         'Umuntu: Error habilitando extensión %s: %s' % (ext, str(e)))
+                
+                syslog.syslog('Umuntu: Extensiones de GNOME aplicadas exitosamente')
+            else:
+                syslog.syslog('Umuntu: No se detectaron extensiones habilitadas')
+                
+        except Exception as e:
+            syslog.syslog(syslog.LOG_WARNING, 
+                         'Umuntu: Error aplicando extensiones de GNOME: %s' % str(e))
+
+    def _is_custom_iso(self):
+        """Detectar si es una ISO personalizada de Umuntu."""
+        try:
+            # Indicadores de que es una ISO personalizada de Umuntu
+            indicators = [
+                '/usr/share/plymouth/umuntu-logo.png',
+                '/usr/share/backgrounds/Nero-wallpaper_1.jpg',
+                '/usr/share/icons/Nero-Red',
+                '/usr/share/ubiquity/fix-user-setup',
+                '/usr/share/ubiquity/copy-wallpaper-config'
+            ]
+            
+            # Verificar archivos específicos de Umuntu
+            for indicator in indicators:
+                if os.path.exists(indicator):
+                    syslog.syslog('Umuntu: Indicador de ISO personalizada encontrado: %s' % indicator)
+                    return True
+            
+            # Verificar contenido de /etc/os-release
+            if os.path.exists('/etc/os-release'):
+                try:
+                    with open('/etc/os-release', 'r') as f:
+                        content = f.read()
+                        if 'Umuntu' in content:
+                            syslog.syslog('Umuntu: ISO personalizada detectada en /etc/os-release')
+                            return True
+                except Exception:
+                    pass
+            
+            # Verificar si ya hay software adicional instalado (indicador de ISO personalizada)
+            nonfree_packages = [
+                'ubuntu-restricted-extras',
+                'libavcodec-extra',
+                'gstreamer1.0-plugins-bad',
+                'gstreamer1.0-plugins-ugly',
+                'gstreamer1.0-libav'
+            ]
+            
+            for package in nonfree_packages:
+                try:
+                    result = subprocess.run(['dpkg', '-l', package], 
+                                          capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0 and 'ii' in result.stdout:
+                        syslog.syslog('Umuntu: Software adicional detectado: %s' % package)
+                        return True
+                except Exception:
+                    pass
+            
+            # Verificar configuraciones personalizadas de Umuntu
+            if os.path.exists('/usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override'):
+                try:
+                    with open('/usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override', 'r') as f:
+                        content = f.read()
+                        if 'Nero' in content:
+                            syslog.syslog('Umuntu: Configuración personalizada detectada')
+                            return True
+                except Exception:
+                    pass
+            
+            syslog.syslog('Umuntu: ISO estándar detectada')
+            return False
+            
+        except Exception as e:
+            syslog.syslog(syslog.LOG_WARNING, 
+                         'Umuntu: Error detectando tipo de ISO: %s' % str(e))
+            return False
 
     def copy_dcd(self):
         """Install the Distribution Channel Descriptor (DCD) file."""
